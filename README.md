@@ -1,0 +1,2 @@
+# AndroidTemplate
+Android Template Project
