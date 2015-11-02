@@ -32,7 +32,7 @@ public class ExampleDaoGenerator {
 	public static void main(String[] args) {
 		Schema schema = new Schema(1, "com.trs.template.dao.greendao");
 
-		addUser(schema);
+		addTable(schema);
 
 		try {
 
@@ -42,25 +42,32 @@ public class ExampleDaoGenerator {
 		}
 	}
 
-	private static void addUser(Schema schema) {
-		Entity user = schema.addEntity("User");
-		user.addIdProperty().autoincrement();
-		user.addStringProperty("name").notNull();
-		user.addStringProperty("password").notNull();
-		user.addDateProperty("create_time");
-		user.addDateProperty("last_login_time");
-	}
+	private static void addTable(Schema schema) {
+		// user
+		Entity userEntity = schema.addEntity("User");
+		userEntity.addIdProperty().autoincrement();
+		userEntity.addStringProperty("tel").notNull().unique();
+		userEntity.addStringProperty("name").notNull();
+		userEntity.addStringProperty("password").notNull();
+		userEntity.addDateProperty("create_time");
+		userEntity.addDateProperty("last_login_time");
+		// beacon
+		Entity beaconEntity = schema.addEntity("Beacon");
+		beaconEntity.addIdProperty().autoincrement();
+		beaconEntity.addStringProperty("uuid").notNull();
+		beaconEntity.addIntProperty("major").notNull();
+		beaconEntity.addIntProperty("minor").notNull();
+		beaconEntity.addDateProperty("time");
+		beaconEntity.addDoubleProperty("temperature");
+		beaconEntity.addDoubleProperty("light");
+		beaconEntity.addDoubleProperty("lon");
+		beaconEntity.addDoubleProperty("lat");
 
-	private static void addBeacons(Schema schema) {
-		Entity beacon = schema.addEntity("Beacon");
-		beacon.addIdProperty().autoincrement();
-		beacon.addStringProperty("uuid").notNull();
-		beacon.addIntProperty("major").notNull();
-		beacon.addIntProperty("minor").notNull();
-		beacon.addByteArrayProperty("icon");
-		beacon.addStringProperty("title");
-		beacon.addStringProperty("content");
-		beacon.addStringProperty("url");
+		Property user_id = beaconEntity.addLongProperty("user_id").getProperty();
+		// one beacon to one user
+		beaconEntity.addToOne(userEntity, user_id);
+		// one user to many beacons
+		userEntity.addToMany(beaconEntity, user_id);
 	}
 
 	private static void addNote(Schema schema) {

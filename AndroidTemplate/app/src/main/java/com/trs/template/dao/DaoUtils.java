@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.sensoro.beacon.kit.Beacon;
 import com.trs.template.dao.greendao.DaoMaster;
 import com.trs.template.dao.greendao.DaoSession;
 import com.trs.template.dao.greendao.User;
@@ -87,9 +88,19 @@ public class DaoUtils {
      * @date 2015年10月13日
      * @author trs
      */
-    public User queryUsern(String name) {
+    public User queryUser(String name) {
 
 
         return null;
+    }
+
+    public boolean storeBeacon(List<Beacon> beacons, String user_id) {
+        if (beacons == null) {
+            return false;
+        }
+
+
+
+        return  true;
     }
 }

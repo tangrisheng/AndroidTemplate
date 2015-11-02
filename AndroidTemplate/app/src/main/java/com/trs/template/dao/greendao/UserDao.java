@@ -24,11 +24,14 @@ public class UserDao extends AbstractDao<User, Long> {
     */
     public static class Properties {
         public final static Property Id = new Property(0, Long.class, "id", true, "_id");
-        public final static Property Name = new Property(1, String.class, "name", false, "NAME");
-        public final static Property Password = new Property(2, String.class, "password", false, "PASSWORD");
-        public final static Property Create_time = new Property(3, java.util.Date.class, "create_time", false, "CREATE_TIME");
-        public final static Property Last_login_time = new Property(4, java.util.Date.class, "last_login_time", false, "LAST_LOGIN_TIME");
+        public final static Property Tel = new Property(1, String.class, "tel", false, "TEL");
+        public final static Property Name = new Property(2, String.class, "name", false, "NAME");
+        public final static Property Password = new Property(3, String.class, "password", false, "PASSWORD");
+        public final static Property Create_time = new Property(4, java.util.Date.class, "create_time", false, "CREATE_TIME");
+        public final static Property Last_login_time = new Property(5, java.util.Date.class, "last_login_time", false, "LAST_LOGIN_TIME");
     };
+
+    private DaoSession daoSession;
 
 
     public UserDao(DaoConfig config) {
@@ -37,6 +40,7 @@ public class UserDao extends AbstractDao<User, Long> {
     
     public UserDao(DaoConfig config, DaoSession daoSession) {
         super(config, daoSession);
+        this.daoSession = daoSession;
     }
 
     /** Creates the underlying database table. */
@@ -44,10 +48,11 @@ public class UserDao extends AbstractDao<User, Long> {
         String constraint = ifNotExists? "IF NOT EXISTS ": "";
         db.execSQL("CREATE TABLE " + constraint + "\"USER\" (" + //
                 "\"_id\" INTEGER PRIMARY KEY AUTOINCREMENT ," + // 0: id
-                "\"NAME\" TEXT NOT NULL ," + // 1: name
-                "\"PASSWORD\" TEXT NOT NULL ," + // 2: password
-                "\"CREATE_TIME\" INTEGER," + // 3: create_time
-                "\"LAST_LOGIN_TIME\" INTEGER);"); // 4: last_login_time
+                "\"TEL\" TEXT NOT NULL UNIQUE ," + // 1: tel
+                "\"NAME\" TEXT NOT NULL ," + // 2: name
+                "\"PASSWORD\" TEXT NOT NULL ," + // 3: password
+                "\"CREATE_TIME\" INTEGER," + // 4: create_time
+                "\"LAST_LOGIN_TIME\" INTEGER);"); // 5: last_login_time
     }
 
     /** Drops the underlying database table. */
@@ -65,18 +70,25 @@ public class UserDao extends AbstractDao<User, Long> {
         if (id != null) {
             stmt.bindLong(1, id);
         }
-        stmt.bindString(2, entity.getName());
-        stmt.bindString(3, entity.getPassword());
+        stmt.bindString(2, entity.getTel());
+        stmt.bindString(3, entity.getName());
+        stmt.bindString(4, entity.getPassword());
  
         java.util.Date create_time = entity.getCreate_time();
         if (create_time != null) {
-            stmt.bindLong(4, create_time.getTime());
+            stmt.bindLong(5, create_time.getTime());
         }
  
         java.util.Date last_login_time = entity.getLast_login_time();
         if (last_login_time != null) {
-            stmt.bindLong(5, last_login_time.getTime());
+            stmt.bindLong(6, last_login_time.getTime());
         }
+    }
+
+    @Override
+    protected void attachEntity(User entity) {
+        super.attachEntity(entity);
+        entity.__setDaoSession(daoSession);
     }
 
     /** @inheritdoc */
@@ -90,10 +102,11 @@ public class UserDao extends AbstractDao<User, Long> {
     public User readEntity(Cursor cursor, int offset) {
         User entity = new User( //
             cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0), // id
-            cursor.getString(offset + 1), // name
-            cursor.getString(offset + 2), // password
-            cursor.isNull(offset + 3) ? null : new java.util.Date(cursor.getLong(offset + 3)), // create_time
-            cursor.isNull(offset + 4) ? null : new java.util.Date(cursor.getLong(offset + 4)) // last_login_time
+            cursor.getString(offset + 1), // tel
+            cursor.getString(offset + 2), // name
+            cursor.getString(offset + 3), // password
+            cursor.isNull(offset + 4) ? null : new java.util.Date(cursor.getLong(offset + 4)), // create_time
+            cursor.isNull(offset + 5) ? null : new java.util.Date(cursor.getLong(offset + 5)) // last_login_time
         );
         return entity;
     }
@@ -102,10 +115,11 @@ public class UserDao extends AbstractDao<User, Long> {
     @Override
     public void readEntity(Cursor cursor, User entity, int offset) {
         entity.setId(cursor.isNull(offset + 0) ? null : cursor.getLong(offset + 0));
-        entity.setName(cursor.getString(offset + 1));
-        entity.setPassword(cursor.getString(offset + 2));
-        entity.setCreate_time(cursor.isNull(offset + 3) ? null : new java.util.Date(cursor.getLong(offset + 3)));
-        entity.setLast_login_time(cursor.isNull(offset + 4) ? null : new java.util.Date(cursor.getLong(offset + 4)));
+        entity.setTel(cursor.getString(offset + 1));
+        entity.setName(cursor.getString(offset + 2));
+        entity.setPassword(cursor.getString(offset + 3));
+        entity.setCreate_time(cursor.isNull(offset + 4) ? null : new java.util.Date(cursor.getLong(offset + 4)));
+        entity.setLast_login_time(cursor.isNull(offset + 5) ? null : new java.util.Date(cursor.getLong(offset + 5)));
      }
     
     /** @inheritdoc */

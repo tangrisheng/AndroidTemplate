@@ -1,170 +1,143 @@
 package com.trs.template.net;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import javax.xml.transform.TransformerException;
 
-import android.R.integer;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
+
 import android.util.Log;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request.Method;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
+
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+
 import com.trs.template.dao.DaoUtils;
 
 public class NetUtils {
 
-	protected static final String TAG = NetUtils.class.getSimpleName();
+    protected static final String TAG = NetUtils.class.getSimpleName();
 
-	Context context;
-	DaoUtils daoUtils;
-	RequestQueue requestQueue;
-	Gson gson;
+    Context context;
+    DaoUtils daoUtils;
+    RequestQueue requestQueue;
+    Gson gson;
 
-	public static final String DOMAIN = "http://sensoro-mocha.chinacloudapp.cn:9217";
-	public static final String URL_REQUEST_BEACON = "/interface/beacons/list";
-	public static final String URL_REQUEST_TIMESTAMP = "/interface/beacons/timestamp";
+    public static final String DOMAIN = "http://192.168.0.146:3000";
+    public static final String URL_REQUEST_LOGIN = "/interface/user";
 
-	public NetUtils(Context context, DaoUtils daoUtils) {
-		this.context = context;
-		this.daoUtils = daoUtils;
-		gson = new Gson();
-		requestQueue = Volley.newRequestQueue(context.getApplicationContext());
-		requestQueue.start();
+    private static NetUtils netUtils;
 
-	}
+    private NetUtils(Context context, DaoUtils daoUtils) {
+        this.context = context;
+        this.daoUtils = daoUtils;
+        gson = new Gson();
+        requestQueue = Volley.newRequestQueue(context.getApplicationContext());
+        requestQueue.start();
 
-//	public SightBeacon requestBeacon(String uuid, Integer major, Integer minor) {
-//		if (uuid == null || major == null || minor == null) {
-//			return null;
-//		}
-//		// search database first.
-//		SightBeacon sightBeacon = daoUtils.querySightBeacon(uuid, major, minor);
-//		if (sightBeacon != null) {
-//			return sightBeacon;
-//		}
-//		// if no beacon in database, net request.in demo,just search beacon in
-//		// database.
-//		return null;
-//	}
+    }
 
-	private String getUrl(String api) {
+    public static NetUtils getInstance(Context context, DaoUtils daoUtils) {
+        if (netUtils == null) {
+            synchronized (NetUtils.class) {
+                if (netUtils == null) {
+                    netUtils = new NetUtils(context, daoUtils);
+                }
+            }
+        }
+        return netUtils;
+    }
 
-		String url = DOMAIN + api;
+    private String getUrl(String api) {
 
-		return url;
-	}
+        String url = DOMAIN + api;
 
-	/**
-	 * request all beacon config
-	 * @param onAllBeaconListener result callback
-	 * @return
-	 */
-	public boolean requestAllBeacons(final OnAllBeaconListener onAllBeaconListener) {
-		if (onAllBeaconListener == null) {
-			return false;
-		}
+        return url;
+    }
 
-		String url = getUrl(URL_REQUEST_BEACON);
-		Listener<String> listener = new Listener<String>() {
 
-			@Override
-			public void onResponse(String arg0) {
-				Type type = new TypeToken<ArrayList<NetBeacon>>() {
-				}.getType();
-				ArrayList<NetBeacon> netBeacons = gson.fromJson(arg0, type);
-				onAllBeaconListener.onAllBeacons(0, netBeacons);
-			}
-		};
-		ErrorListener errorListener = new ErrorListener() {
+    public boolean requestLogin(final String tel, final String password, final OnLoginListener onLoginListener) {
 
-			@Override
-			public void onErrorResponse(VolleyError arg0) {
-				printLog("e", TAG, arg0.getMessage());
-				onAllBeaconListener.onAllBeacons(1, null);
-			}
-		};
-		requestQueue.add(new StringRequest(Method.GET, url, listener, errorListener));
+        if (tel == null || password == null) {
+            return false;
+        }
 
-		return true;
-	}
+        String url = getUrl(URL_REQUEST_LOGIN);
 
-	/**
-	 * request timestamp
-	 * @param sightID sight id
-	 * @param onTimestampListener result callback
-	 * @return true
-	 */
-	public boolean requestTimestamp(int sightID, final OnTimestampListener onTimestampListener) {
-		if (onTimestampListener == null) {
-			return false;
-		}
+        Listener<String> listener = new Listener<String>() {
 
-		String url = getUrl(URL_REQUEST_TIMESTAMP);
-		Listener<String> listener = new Listener<String>() {
+            @Override
+            public void onResponse(String arg0) {
 
-			@Override
-			public void onResponse(String arg0) {
-				TimestampResponse timestampResponse = gson.fromJson(arg0, TimestampResponse.class);
-				onTimestampListener.onTimestamp(0, timestampResponse);
-			}
-		};
-		ErrorListener errorListener = new ErrorListener() {
+                LoginResponse loginResponse = gson.fromJson(arg0, LoginResponse.class);
+                onLoginListener.onLogin(0, loginResponse);
+            }
+        };
+        ErrorListener errorListener = new ErrorListener() {
 
-			@Override
-			public void onErrorResponse(VolleyError arg0) {
-				printLog("e", TAG, arg0.getMessage());
-				onTimestampListener.onTimestamp(1, null);
-			}
-		};
-		requestQueue.add(new StringRequest(Method.GET, url, listener, errorListener));
+            @Override
+            public void onErrorResponse(VolleyError arg0) {
+                printLog("e", TAG, arg0.getMessage());
+                onLoginListener.onLogin(1, null);
+            }
+        };
+        StringRequest request = new StringRequest(Method.PUT, url, listener, errorListener) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("tel", tel);
+                params.put("password", password);
+                return params;
+            }
 
-		return true;
-	}
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("Content-Type","application/x-www-form-urlencoded");
+                return  params;
+            }
 
-	/**
-	 * request all beacon callback.
-	 * @param  
-	 * @return  
-	 * @date 2015-10-14
-	 * @author trs
-	 */
-	public interface OnAllBeaconListener {
-		public void onAllBeacons(int status, List<NetBeacon> netBeacons);
-	}
+        };
+        requestQueue.add(request);
 
-	/**
-	 * request timestamp callback.
-	 * @param  
-	 * @return  
-	 * @date 2015-10-14
-	 * @author trs
-	 */
-	public interface OnTimestampListener {
-		public void onTimestamp(int status, TimestampResponse timestampResponse);
-	}
+        return true;
+    }
 
-	public void printLog(String level, String tag, String msg) {
-		if (msg == null) {
-			Log.e(tag, "msg is null");
-			return;
-		}
-		if (level.equals("i")) {
-			Log.i(tag, msg);
-		} else if (level.equals("e")) {
-			Log.e(tag, msg);
-		}
-	}
+
+    /**
+     * request all beacon callback.
+     *
+     * @param
+     * @author trs
+     * @return
+     * @date 2015-10-14
+     */
+    public interface OnAllBeaconListener {
+        public void onAllBeacons(int status, List<NetBeacon> netBeacons);
+    }
+
+    public interface OnLoginListener {
+        public void onLogin(int status, LoginResponse loginResponse);
+    }
+
+    public void printLog(String level, String tag, String msg) {
+        if (msg == null) {
+            Log.e(tag, "msg is null");
+            return;
+        }
+        if (level.equals("i")) {
+            Log.i(tag, msg);
+        } else if (level.equals("e")) {
+            Log.e(tag, msg);
+        }
+    }
 }
